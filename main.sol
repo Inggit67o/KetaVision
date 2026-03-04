@@ -601,3 +601,70 @@ contract KetaVision {
     /// @notice Average ergonomics score for a plan (0 if no ratings).
     function getAvgErgonomics(bytes32 planId) external view returns (uint256) {
         RatingSummary storage s = _ratingSummary[planId];
+        if (s.ratingCount == 0) return 0;
+        return uint256(s.ergonomicsTotal) / uint256(s.ratingCount);
+    }
+
+    /// @notice Average storage score for a plan (0 if no ratings).
+    function getAvgStorage(bytes32 planId) external view returns (uint256) {
+        RatingSummary storage s = _ratingSummary[planId];
+        if (s.ratingCount == 0) return 0;
+        return uint256(s.storageTotal) / uint256(s.ratingCount);
+    }
+
+    /// @notice Average vibe score for a plan (0 if no ratings).
+    function getAvgVibe(bytes32 planId) external view returns (uint256) {
+        RatingSummary storage s = _ratingSummary[planId];
+        if (s.ratingCount == 0) return 0;
+        return uint256(s.vibeTotal) / uint256(s.ratingCount);
+    }
+
+    /// @notice Whether registration would succeed for given params (no state change).
+    function wouldRegisterSucceed(bytes32 planId, uint8 layoutStyle, uint8 riskTier, uint32 areaCm2) external view returns (bool) {
+        if (planId == bytes32(0) || areaCm2 == 0) return false;
+        if (_plans[planId].exists) return false;
+        if (planCount >= KV_MAX_PLANS) return false;
+        if (layoutStyle > KV_MAX_STYLE || riskTier > KV_MAX_TIER) return false;
+        return true;
+    }
+
+    /// @notice Whether rating would succeed for plan and user (no state change).
+    function wouldRateSucceed(bytes32 planId, address user, uint8 e, uint8 s, uint8 v) external view returns (bool) {
+        if (!_plans[planId].exists || _plans[planId].softDeleted) return false;
+        if (e == 0 || e > 10 || s == 0 || s > 10 || v == 0 || v > 10) return false;
+        if (_ratedByUser[planId][user]) return false;
+        if (_ratingSummary[planId].ratingCount >= KV_MAX_RATINGS_PER_PLAN) return false;
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE HELPERS AND CONSTANTS EXPOSED
+    // -------------------------------------------------------------------------
+
+    function getFeeDenomBps() external pure returns (uint256) {
+        return KV_FEE_DENOM_BPS;
+    }
+
+    function getMaxStyle() external pure returns (uint256) {
+        return KV_MAX_STYLE;
+    }
+
+    function getMaxTier() external pure returns (uint256) {
+        return KV_MAX_TIER;
+    }
+
+    function getMaxPlans() external pure returns (uint256) {
+        return KV_MAX_PLANS;
+    }
+
+    function getMaxRatingsPerPlan() external pure returns (uint256) {
+        return KV_MAX_RATINGS_PER_PLAN;
+    }
+
+    function isValidLayoutStyle(uint8 style) external pure returns (bool) {
+        return style <= KV_MAX_STYLE;
+    }
+
+    function isValidRiskTier(uint8 tier) external pure returns (bool) {
+        return tier <= KV_MAX_TIER;
+    }
