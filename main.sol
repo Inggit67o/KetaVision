@@ -802,3 +802,70 @@ contract KetaVision {
     function maxRatingsPerPlanCap() external pure returns (uint256) { return KV_MAX_RATINGS_PER_PLAN; }
 
     /// @notice Namespace hash for pause scope.
+    function getNamespace() external pure returns (bytes32) { return KV_NAMESPACE; }
+
+    /// @notice Version hash for off-chain identification.
+    function getVersion() external pure returns (bytes32) { return KV_VERSION; }
+
+    /// @notice Check if address is the owner.
+    function isOwner(address account) external view returns (bool) { return account == owner; }
+
+    /// @notice Check if address is the oracle.
+    function isOracle(address account) external view returns (bool) { return account == oracle; }
+
+    /// @notice Check if address is the auditor.
+    function isAuditor(address account) external view returns (bool) { return account == auditor; }
+
+    /// @notice Check if address is the treasury.
+    function isTreasury(address account) external view returns (bool) { return account == treasury; }
+
+    /// @notice Check if plan is active (exists and not soft-deleted).
+    function isPlanActive(bytes32 planId) external view returns (bool) {
+        Plan storage p = _plans[planId];
+        return p.exists && !p.softDeleted;
+    }
+
+    /// @notice Compute required wei for rating when feeBps > 0 (1 ether * feeBps / 10000).
+    function requiredRatingFeeWei() external view returns (uint256) {
+        if (feeBps == 0) return 0;
+        return (1 ether * feeBps) / KV_FEE_DENOM_BPS;
+    }
+
+    /// @notice Quote fee for a custom amount at current feeBps.
+    function quoteFeeForAmount(uint256 amountWei) external view returns (uint256) {
+        return (amountWei * feeBps) / KV_FEE_DENOM_BPS;
+    }
+
+    function planIdAt(uint256 index) external view returns (bytes32) {
+        if (index >= _planIds.length) revert KV_InvalidIndex();
+        return _planIds[index];
+    }
+
+    function totalPlanCount() external view returns (uint256) { return planCount; }
+
+    function currentFeeBps() external view returns (uint256) { return feeBps; }
+
+    function namespacePaused() external view returns (bool) { return _namespacePaused; }
+
+    function balanceWei() external view returns (uint256) { return address(this).balance; }
+
+    function getRatingCount(bytes32 planId) external view returns (uint32) {
+        return _ratingSummary[planId].ratingCount;
+    }
+
+    function getErgonomicsTotal(bytes32 planId) external view returns (uint32) {
+        return _ratingSummary[planId].ergonomicsTotal;
+    }
+
+    function getStorageTotal(bytes32 planId) external view returns (uint32) {
+        return _ratingSummary[planId].storageTotal;
+    }
+
+    function getVibeTotal(bytes32 planId) external view returns (uint32) {
+        return _ratingSummary[planId].vibeTotal;
+    }
+
+    function creatorOf(bytes32 planId) external view returns (address) { return _plans[planId].creator; }
+    function layoutStyleOf(bytes32 planId) external view returns (uint8) { return _plans[planId].layoutStyle; }
+    function riskTierOf(bytes32 planId) external view returns (uint8) { return _plans[planId].riskTier; }
+    function areaCm2Of(bytes32 planId) external view returns (uint32) { return _plans[planId].areaCm2; }
