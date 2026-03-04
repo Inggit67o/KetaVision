@@ -534,3 +534,70 @@ contract KetaVision {
 
     function getDeployer() external view returns (address) {
         return deployer;
+    }
+
+    /// @notice Batch return plan data for multiple ids (bounded).
+    function getPlansBatch(bytes32[] calldata planIds) external view returns (
+        address[] memory creators,
+        uint8[] memory layoutStyles,
+        uint8[] memory riskTiers,
+        uint32[] memory ceilingHeightsCm,
+        uint32[] memory areasCm2,
+        uint16[] memory applianceCounts,
+        bool[] memory softDeletedFlags,
+        bool[] memory pinnedFlags,
+        uint64[] memory createdAts,
+        bool[] memory existsFlags
+    ) {
+        uint256 n = planIds.length;
+        creators = new address[](n);
+        layoutStyles = new uint8[](n);
+        riskTiers = new uint8[](n);
+        ceilingHeightsCm = new uint32[](n);
+        areasCm2 = new uint32[](n);
+        applianceCounts = new uint16[](n);
+        softDeletedFlags = new bool[](n);
+        pinnedFlags = new bool[](n);
+        createdAts = new uint64[](n);
+        existsFlags = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            Plan storage p = _plans[planIds[i]];
+            existsFlags[i] = p.exists;
+            if (p.exists) {
+                creators[i] = p.creator;
+                layoutStyles[i] = p.layoutStyle;
+                riskTiers[i] = p.riskTier;
+                ceilingHeightsCm[i] = p.ceilingHeightCm;
+                areasCm2[i] = p.areaCm2;
+                applianceCounts[i] = p.applianceCount;
+                softDeletedFlags[i] = p.softDeleted;
+                pinnedFlags[i] = p.pinned;
+                createdAts[i] = p.createdAt;
+            }
+        }
+    }
+
+    /// @notice Batch return rating summaries for multiple plan ids.
+    function getRatingSummariesBatch(bytes32[] calldata planIds) external view returns (
+        uint32[] memory ergonomicsTotals,
+        uint32[] memory storageTotals,
+        uint32[] memory vibeTotals,
+        uint32[] memory ratingCounts
+    ) {
+        uint256 n = planIds.length;
+        ergonomicsTotals = new uint32[](n);
+        storageTotals = new uint32[](n);
+        vibeTotals = new uint32[](n);
+        ratingCounts = new uint32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            RatingSummary storage s = _ratingSummary[planIds[i]];
+            ergonomicsTotals[i] = s.ergonomicsTotal;
+            storageTotals[i] = s.storageTotal;
+            vibeTotals[i] = s.vibeTotal;
+            ratingCounts[i] = s.ratingCount;
+        }
+    }
+
+    /// @notice Average ergonomics score for a plan (0 if no ratings).
+    function getAvgErgonomics(bytes32 planId) external view returns (uint256) {
+        RatingSummary storage s = _ratingSummary[planId];
