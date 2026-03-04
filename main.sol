@@ -869,3 +869,70 @@ contract KetaVision {
     function layoutStyleOf(bytes32 planId) external view returns (uint8) { return _plans[planId].layoutStyle; }
     function riskTierOf(bytes32 planId) external view returns (uint8) { return _plans[planId].riskTier; }
     function areaCm2Of(bytes32 planId) external view returns (uint32) { return _plans[planId].areaCm2; }
+    function applianceCountOf(bytes32 planId) external view returns (uint16) { return _plans[planId].applianceCount; }
+    function createdAtOf(bytes32 planId) external view returns (uint64) { return _plans[planId].createdAt; }
+    function ceilingHeightCmOf(bytes32 planId) external view returns (uint32) { return _plans[planId].ceilingHeightCm; }
+    function exists(bytes32 planId) external view returns (bool) { return _plans[planId].exists; }
+    function softDeleted(bytes32 planId) external view returns (bool) { return _plans[planId].softDeleted; }
+    function pinned(bytes32 planId) external view returns (bool) { return _plans[planId].pinned; }
+
+    function denomBps() external pure returns (uint256) { return KV_FEE_DENOM_BPS; }
+    function maxStyle() external pure returns (uint256) { return KV_MAX_STYLE; }
+    function maxTier() external pure returns (uint256) { return KV_MAX_TIER; }
+    function maxPlans() external pure returns (uint256) { return KV_MAX_PLANS; }
+    function maxRatingsPerPlan() external pure returns (uint256) { return KV_MAX_RATINGS_PER_PLAN; }
+    function ns() external pure returns (bytes32) { return KV_NAMESPACE; }
+    function ver() external pure returns (bytes32) { return KV_VERSION; }
+
+    function planCountByTier0() external view returns (uint256) { return countPlansByRiskTier(0); }
+    function planCountByTier1() external view returns (uint256) { return countPlansByRiskTier(1); }
+    function planCountByTier2() external view returns (uint256) { return countPlansByRiskTier(2); }
+    function planCountByTier3() external view returns (uint256) { return countPlansByRiskTier(3); }
+    function planCountByTier4() external view returns (uint256) { return countPlansByRiskTier(4); }
+    function planCountByTier5() external view returns (uint256) { return countPlansByRiskTier(5); }
+    function planCountByTier6() external view returns (uint256) { return countPlansByRiskTier(6); }
+    function planCountByStyle0() external view returns (uint256) { return countPlansByLayoutStyle(0); }
+    function planCountByStyle1() external view returns (uint256) { return countPlansByLayoutStyle(1); }
+    function planCountByStyle2() external view returns (uint256) { return countPlansByLayoutStyle(2); }
+    function planCountByStyle3() external view returns (uint256) { return countPlansByLayoutStyle(3); }
+    function planCountByStyle4() external view returns (uint256) { return countPlansByLayoutStyle(4); }
+    function planCountByStyle5() external view returns (uint256) { return countPlansByLayoutStyle(5); }
+    function planCountByStyle6() external view returns (uint256) { return countPlansByLayoutStyle(6); }
+    function planCountByStyle7() external view returns (uint256) { return countPlansByLayoutStyle(7); }
+    function planCountByStyle8() external view returns (uint256) { return countPlansByLayoutStyle(8); }
+    function planCountByStyle9() external view returns (uint256) { return countPlansByLayoutStyle(9); }
+    function planCountByStyle10() external view returns (uint256) { return countPlansByLayoutStyle(10); }
+
+    function planCountByStyle11() external view returns (uint256) { return countPlansByLayoutStyle(11); }
+    function planCountByStyle12() external view returns (uint256) { return countPlansByLayoutStyle(12); }
+    function planCountByStyle13() external view returns (uint256) { return countPlansByLayoutStyle(13); }
+    function planCountByStyle14() external view returns (uint256) { return countPlansByLayoutStyle(14); }
+    function planCountByStyle15() external view returns (uint256) { return countPlansByLayoutStyle(15); }
+
+    /// @notice Returns plan and rating in one call for off-chain indexing.
+    function bpsDenom() external pure returns (uint256) { return KV_FEE_DENOM_BPS; }
+    function styleCap() external pure returns (uint8) { return uint8(KV_MAX_STYLE); }
+    function tierCap() external pure returns (uint8) { return uint8(KV_MAX_TIER); }
+    function plansCap() external pure returns (uint256) { return KV_MAX_PLANS; }
+    function ratingsCap() external pure returns (uint256) { return KV_MAX_RATINGS_PER_PLAN; }
+    function nameSpace() external pure returns (bytes32) { return KV_NAMESPACE; }
+    function version() external pure returns (bytes32) { return KV_VERSION; }
+    function totalPlans() external view returns (uint256) { return planCount; }
+    function plansLength() external view returns (uint256) { return _planIds.length; }
+    function feeBpsCurrent() external view returns (uint256) { return feeBps; }
+    function paused() external view returns (bool) { return _namespacePaused; }
+    function balance() external view returns (uint256) { return address(this).balance; }
+    function ownerAddr() external view returns (address) { return owner; }
+    function deployerAddr() external view returns (address) { return deployer; }
+    function oracleAddr() external view returns (address) { return oracle; }
+    function auditorAddr() external view returns (address) { return auditor; }
+    function treasuryAddr() external view returns (address) { return treasury; }
+
+    function zeroPlanId(bytes32 id) external pure returns (bool) { return id == bytes32(0); }
+    function validStyle(uint8 s) external pure returns (bool) { return s <= KV_MAX_STYLE; }
+    function validTier(uint8 t) external pure returns (bool) { return t <= KV_MAX_TIER; }
+    function validScore(uint8 sc) external pure returns (bool) { return sc >= 1 && sc <= 10; }
+    function deriveId(address c, bytes32 seed, uint256 salt) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(c, seed, salt));
+    }
+    function feeFor(uint256 amt) external view returns (uint256) {
