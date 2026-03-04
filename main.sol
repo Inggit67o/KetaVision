@@ -936,3 +936,69 @@ contract KetaVision {
         return keccak256(abi.encodePacked(c, seed, salt));
     }
     function feeFor(uint256 amt) external view returns (uint256) {
+        return (amt * feeBps) / KV_FEE_DENOM_BPS;
+    }
+    function netAfterFee(uint256 amt) external view returns (uint256) {
+        return amt - (amt * feeBps) / KV_FEE_DENOM_BPS;
+    }
+
+    /// @notice Returns plan and rating in one call for off-chain indexing.
+    function getPlanFull(bytes32 planId) external view returns (
+        address creator_,
+        uint8 layoutStyle_,
+        uint8 riskTier_,
+        uint32 ceilingHeightCm_,
+        uint32 areaCm2_,
+        uint16 applianceCount_,
+        bool softDeleted_,
+        bool pinned_,
+        uint64 createdAt_,
+        uint32 ergonomicsTotal_,
+        uint32 storageTotal_,
+        uint32 vibeTotal_,
+        uint32 ratingCount_
+    ) {
+        Plan storage p = _plans[planId];
+        if (!p.exists) revert KV_NotFound();
+        RatingSummary storage r = _ratingSummary[planId];
+        return (
+            p.creator,
+            p.layoutStyle,
+            p.riskTier,
+            p.ceilingHeightCm,
+            p.areaCm2,
+            p.applianceCount,
+            p.softDeleted,
+            p.pinned,
+            p.createdAt,
+            r.ergonomicsTotal,
+            r.storageTotal,
+            r.vibeTotal,
+            r.ratingCount
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // FALLBACK
+    // -------------------------------------------------------------------------
+
+    function isNotPaused() external view returns (bool) { return !_namespacePaused; }
+    function planLimit() external pure returns (uint256) { return KV_MAX_PLANS; }
+    function ratingLimit() external pure returns (uint256) { return KV_MAX_RATINGS_PER_PLAN; }
+    function styleLimit() external pure returns (uint256) { return KV_MAX_STYLE; }
+    function tierLimit() external pure returns (uint256) { return KV_MAX_TIER; }
+    function hasPlan(bytes32 id) external view returns (bool) { return _plans[id].exists; }
+    function isDeleted(bytes32 id) external view returns (bool) { return _plans[id].softDeleted; }
+    function isPinned(bytes32 id) external view returns (bool) { return _plans[id].pinned; }
+    function ratingCnt(bytes32 id) external view returns (uint32) { return _ratingSummary[id].ratingCount; }
+    function ergoSum(bytes32 id) external view returns (uint32) { return _ratingSummary[id].ergonomicsTotal; }
+    function storageSum(bytes32 id) external view returns (uint32) { return _ratingSummary[id].storageTotal; }
+    function vibeSum(bytes32 id) external view returns (uint32) { return _ratingSummary[id].vibeTotal; }
+    function didRate(bytes32 id, address u) external view returns (bool) { return _ratedByUser[id][u]; }
+    function planCreator(bytes32 id) external view returns (address) { return _plans[id].creator; }
+    function planArea(bytes32 id) external view returns (uint32) { return _plans[id].areaCm2; }
+
+    receive() external payable {
+        // passive ETH can be swept off-chain by owner via separate mechanism
+    }
+}
