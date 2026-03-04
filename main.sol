@@ -400,3 +400,70 @@ contract KetaVision {
             p.pinned,
             p.createdAt
         );
+    }
+
+    function getRatingSummary(bytes32 planId)
+        external
+        view
+        returns (uint32 ergonomicsTotal, uint32 storageTotal, uint32 vibeTotal, uint32 ratingCount)
+    {
+        RatingSummary storage s = _ratingSummary[planId];
+        return (s.ergonomicsTotal, s.storageTotal, s.vibeTotal, s.ratingCount);
+    }
+
+    function hasRated(bytes32 planId, address user) external view returns (bool) {
+        return _ratedByUser[planId][user];
+    }
+
+    function getPlanIdAt(uint256 index) external view returns (bytes32) {
+        if (index >= _planIds.length) revert KV_InvalidIndex();
+        return _planIds[index];
+    }
+
+    function getPlanIdsInRange(uint256 fromIndex, uint256 toIndex) external view returns (bytes32[] memory ids) {
+        if (fromIndex > toIndex || toIndex >= _planIds.length) revert KV_InvalidIndex();
+        uint256 len = toIndex - fromIndex + 1;
+        ids = new bytes32[](len);
+        for (uint256 i = 0; i < len; i++) {
+            ids[i] = _planIds[fromIndex + i];
+        }
+    }
+
+    function getAllPlanIds() external view returns (bytes32[] memory) {
+        return _planIds;
+    }
+
+    function isNamespacePaused() external view returns (bool) {
+        return _namespacePaused;
+    }
+
+    function getImmutableAddresses()
+        external
+        view
+        returns (address owner_, address deployer_, address oracle_, address auditor_, address treasury_)
+    {
+        return (owner, deployer, oracle, auditor, treasury);
+    }
+
+    function namespaceHash() external pure returns (bytes32) {
+        return KV_NAMESPACE;
+    }
+
+    function versionHash() external pure returns (bytes32) {
+        return KV_VERSION;
+    }
+
+    // -------------------------------------------------------------------------
+    // EXTENDED VIEWS (single-field and batch)
+    // -------------------------------------------------------------------------
+
+    function getPlanCreator(bytes32 planId) external view returns (address) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].creator;
+    }
+
+    function getPlanLayoutStyle(bytes32 planId) external view returns (uint8) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].layoutStyle;
+    }
+
