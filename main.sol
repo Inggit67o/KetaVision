@@ -333,3 +333,70 @@ contract KetaVision {
         if (vibeScore == 0 || vibeScore > 10) revert KV_InvalidScore();
 
         RatingSummary storage summary = _ratingSummary[planId];
+        if (summary.ratingCount >= KV_MAX_RATINGS_PER_PLAN) revert KV_TooManyRatings();
+        if (_ratedByUser[planId][msg.sender]) revert KV_InvalidScore();
+
+        if (feeBps > 0) {
+            uint256 requiredFee = (1 ether * feeBps) / KV_FEE_DENOM_BPS;
+            if (msg.value < requiredFee) revert KV_InsufficientFee();
+            if (treasury != address(0)) {
+                (bool ok, ) = treasury.call{value: requiredFee}("");
+                if (!ok) revert KV_InsufficientFee();
+            }
+            if (msg.value > requiredFee) {
+                (bool refundOk, ) = msg.sender.call{value: msg.value - requiredFee}("");
+                if (!refundOk) revert KV_InsufficientFee();
+            }
+        } else if (msg.value > 0) {
+            (bool refundOk2, ) = msg.sender.call{value: msg.value}("");
+            if (!refundOk2) revert KV_InsufficientFee();
+        }
+
+        summary.ergonomicsTotal += ergonomicsScore;
+        summary.storageTotal += storageScore;
+        summary.vibeTotal += vibeScore;
+        summary.ratingCount += 1;
+        _ratedByUser[planId][msg.sender] = true;
+
+        emit PlanRated(
+            planId,
+            msg.sender,
+            ergonomicsScore,
+            storageScore,
+            vibeScore,
+            uint64(block.timestamp)
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEWS
+    // -------------------------------------------------------------------------
+
+    function getPlan(bytes32 planId)
+        external
+        view
+        returns (
+            address creator,
+            uint8 layoutStyle,
+            uint8 riskTier,
+            uint32 ceilingHeightCm,
+            uint32 areaCm2,
+            uint16 applianceCount,
+            bool softDeleted,
+            bool pinned,
+            uint64 createdAt
+        )
+    {
+        Plan storage p = _plans[planId];
+        if (!p.exists) revert KV_NotFound();
+        return (
+            p.creator,
+            p.layoutStyle,
+            p.riskTier,
+            p.ceilingHeightCm,
+            p.areaCm2,
+            p.applianceCount,
+            p.softDeleted,
+            p.pinned,
+            p.createdAt
+        );
