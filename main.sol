@@ -199,3 +199,70 @@ contract KetaVision {
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
+
+    constructor() {
+        owner = msg.sender;
+        deployer = msg.sender;
+        oracle = msg.sender;
+        auditor = msg.sender;
+        treasury = msg.sender;
+        feeBps = 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // ADMIN CONFIG
+    // -------------------------------------------------------------------------
+
+    function setOracle(address newOracle) external onlyOwner {
+        if (newOracle == address(0)) revert KV_ZeroAddress();
+        address previous = oracle;
+        oracle = newOracle;
+        emit OracleUpdated(previous, newOracle, block.number);
+    }
+
+    function setAuditor(address newAuditor) external onlyOwner {
+        if (newAuditor == address(0)) revert KV_ZeroAddress();
+        address previous = auditor;
+        auditor = newAuditor;
+        emit AuditorUpdated(previous, newAuditor, block.number);
+    }
+
+    function setTreasury(address newTreasury) external onlyOwner {
+        if (newTreasury == address(0)) revert KV_ZeroAddress();
+        address previous = treasury;
+        treasury = newTreasury;
+        emit TreasuryUpdated(previous, newTreasury, block.number);
+    }
+
+    function setFeeBps(uint256 newFeeBps) external onlyOwner {
+        if (newFeeBps > 500) revert KV_InvalidFeeBps(); // max 5%
+        uint256 prev = feeBps;
+        feeBps = newFeeBps;
+        emit FeeBpsUpdated(prev, newFeeBps, block.number);
+    }
+
+    function setNamespacePaused(bool paused) external onlyOwner {
+        _namespacePaused = paused;
+        emit NamespacePaused(KV_NAMESPACE, paused, block.number);
+    }
+
+    // -------------------------------------------------------------------------
+    // CORE: PLAN REGISTRATION
+    // -------------------------------------------------------------------------
+
+    function registerPlan(
+        bytes32 planId,
+        uint8 layoutStyle,
+        uint8 riskTier,
+        uint32 ceilingHeightCm,
+        uint32 areaCm2,
+        uint16 applianceCount
+    ) external whenNamespaceActive nonReentrant {
+        if (planId == bytes32(0)) revert KV_ZeroPlan();
+        if (_plans[planId].exists) revert KV_AlreadyExists();
+        if (planCount >= KV_MAX_PLANS) revert KV_TooManyPlans();
+        if (areaCm2 == 0) revert KV_ZeroArea();
+        if (layoutStyle > KV_MAX_STYLE) revert KV_InvalidStyle();
+        if (riskTier > KV_MAX_TIER) revert KV_InvalidTier();
+
+        Plan memory p = Plan({
