@@ -132,3 +132,70 @@ contract KetaVision {
 
     // Layout styles 0..15: 0=minimalist, 1=warm-wood, 2=industrial, 3=scandi, 4=neo-classic,
     // 5=maximalist, 6=galley-optimized, 7=island-centric, 8=chef-lab, 9=family-hub, 10..15=custom.
+    // Risk tiers 0..6: 0=chill, 1=low, 2=medium, 3=high, 4=degen, 5=max-degen, 6=experimental.
+    // Plans are stored by bytes32 planId; use derivePlanId(creator, seed, salt) for deterministic ids.
+    // Rating scores 1..10 for ergonomics, storage, vibe; each address can rate each plan at most once.
+    // Oracle can pin/unpin plans for featured display; auditor can soft-delete inappropriate plans.
+    // Owner can update oracle, auditor, treasury, feeBps (max 500 = 5%), and pause the namespace.
+    // Reentrancy guard protects registerPlan and ratePlan; pull-payment pattern for fee and refunds.
+    //
+    // Gas considerations: registerPlan writes one Plan + one push; ratePlan updates RatingSummary
+    // and _ratedByUser; batch view functions iterate over input arrays — cap batch size off-chain.
+    // Plan and RatingSummary are in separate mappings to keep SLOAD costs predictable.
+    // Events KitchenSketched and PlanRated include all relevant fields for indexers.
+    // Soft-deleted plans remain in _planIds but are excluded from pin and rate logic.
+    // Pinned plans can be queried via getPlanIdsPinned for front-end featured sections.
+    // Fee on rating is optional (feeBps=0 means no fee); excess msg.value is refunded.
+    // Treasury receives the fee when feeBps > 0; if treasury is zero address behavior is unchanged
+    // but fee transfer would fail so feeBps should be 0 or treasury set before enabling fee.
+    // Namespace pause blocks registerPlan and ratePlan; admin actions (pin, softDelete, config) remain.
+    // No time locks or multi-sig in this contract; owner is single EOA or contract as deployed.
+    //
+    // Off-chain: index KitchenSketched and PlanRated for search by creator, riskTier, layoutStyle;
+    // use getPlansInRange and getPlanFull for bulk sync; use getPlanIdsForRiskTier for tier filters.
+    // requiredRatingFeeWei() and quoteFeeForAmount(amount) for UI fee display when feeBps > 0.
+    //
+    // View function index: getPlan, getPlanCreator, getPlanLayoutStyle, getPlanRiskTier, getPlanCeilingHeightCm,
+    // getPlanAreaCm2, getPlanApplianceCount, getPlanCreatedAt, planExists, planIsPinned, planIsSoftDeleted,
+    // getRatingSummary, getAvgErgonomics, getAvgStorage, getAvgVibe, hasRated, getPlanIdAt, getPlanIdsInRange,
+    // getAllPlanIds, getPlansBatch, getRatingSummariesBatch, getPlansInRange, getPlanIdsForCreator,
+    // getPlanIdsForRiskTier, getPlanIdsPinned, getPlanFull, creatorOf, layoutStyleOf, riskTierOf, areaCm2Of,
+    // applianceCountOf, createdAtOf, ceilingHeightCmOf, exists, softDeleted, pinned, countPlansByRiskTier,
+    // countPlansByLayoutStyle, wouldRegisterSucceed, wouldRateSucceed, getGlobalState, contractBalanceWei,
+    // isPlanActive, requiredRatingFeeWei, quoteFeeForAmount, planIdAt, totalPlanCount, currentFeeBps,
+    // namespacePaused, balanceWei, getRatingCount, getErgonomicsTotal, getStorageTotal, getVibeTotal.
+
+    // -------------------------------------------------------------------------
+    // MODIFIERS
+    // -------------------------------------------------------------------------
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert KV_NotOwner();
+        _;
+    }
+
+    modifier onlyOracle() {
+        if (msg.sender != oracle) revert KV_NotOracle();
+        _;
+    }
+
+    modifier onlyAuditor() {
+        if (msg.sender != auditor) revert KV_NotAuditor();
+        _;
+    }
+
+    modifier nonReentrant() {
+        if (_lock != 0) revert KV_Reentrant();
+        _lock = 1;
+        _;
+        _lock = 0;
+    }
+
+    modifier whenNamespaceActive() {
+        if (_namespacePaused) revert KV_NamespaceLocked();
+        _;
+    }
+
+    // -------------------------------------------------------------------------
+    // CONSTRUCTOR
+    // -------------------------------------------------------------------------
