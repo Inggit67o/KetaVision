@@ -467,3 +467,70 @@ contract KetaVision {
         return _plans[planId].layoutStyle;
     }
 
+    function getPlanRiskTier(bytes32 planId) external view returns (uint8) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].riskTier;
+    }
+
+    function getPlanCeilingHeightCm(bytes32 planId) external view returns (uint32) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].ceilingHeightCm;
+    }
+
+    function getPlanAreaCm2(bytes32 planId) external view returns (uint32) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].areaCm2;
+    }
+
+    function getPlanApplianceCount(bytes32 planId) external view returns (uint16) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].applianceCount;
+    }
+
+    function getPlanCreatedAt(bytes32 planId) external view returns (uint64) {
+        if (!_plans[planId].exists) revert KV_NotFound();
+        return _plans[planId].createdAt;
+    }
+
+    function planExists(bytes32 planId) external view returns (bool) {
+        return _plans[planId].exists;
+    }
+
+    function planIsPinned(bytes32 planId) external view returns (bool) {
+        return _plans[planId].pinned;
+    }
+
+    function planIsSoftDeleted(bytes32 planId) external view returns (bool) {
+        return _plans[planId].softDeleted;
+    }
+
+    function getPlanCount() external view returns (uint256) {
+        return planCount;
+    }
+
+    function getPlanIdsLength() external view returns (uint256) {
+        return _planIds.length;
+    }
+
+    function getFeeBps() external view returns (uint256) {
+        return feeBps;
+    }
+
+    function getOracle() external view returns (address) {
+        return oracle;
+    }
+
+    function getAuditor() external view returns (address) {
+        return auditor;
+    }
+
+    function getTreasury() external view returns (address) {
+        return treasury;
+    }
+
+    function getOwner() external view returns (address) {
+        return owner;
+    }
+
+    function getDeployer() external view returns (address) {
+        return deployer;
