@@ -735,3 +735,70 @@ contract KetaVision {
             }
         }
         ids = new bytes32[](found);
+        for (uint256 j = 0; j < found; j++) ids[j] = tmp[j];
+    }
+
+    function getPlanIdsForRiskTier(uint8 riskTier, uint256 maxReturn) external view returns (bytes32[] memory ids) {
+        if (riskTier > KV_MAX_TIER) return new bytes32[](0);
+        uint256 cap = maxReturn > _planIds.length ? _planIds.length : maxReturn;
+        uint256 found = 0;
+        bytes32[] memory tmp = new bytes32[](_planIds.length);
+        for (uint256 i = 0; i < _planIds.length && found < cap; i++) {
+            if (_plans[_planIds[i]].riskTier == riskTier && !_plans[_planIds[i]].softDeleted) {
+                tmp[found] = _planIds[i];
+                found++;
+            }
+        }
+        ids = new bytes32[](found);
+        for (uint256 j = 0; j < found; j++) ids[j] = tmp[j];
+    }
+
+    function getPlanIdsPinned(uint256 maxReturn) external view returns (bytes32[] memory ids) {
+        uint256 cap = maxReturn > _planIds.length ? _planIds.length : maxReturn;
+        uint256 found = 0;
+        bytes32[] memory tmp = new bytes32[](_planIds.length);
+        for (uint256 i = 0; i < _planIds.length && found < cap; i++) {
+            if (_plans[_planIds[i]].pinned && !_plans[_planIds[i]].softDeleted) {
+                tmp[found] = _planIds[i];
+                found++;
+            }
+        }
+        ids = new bytes32[](found);
+        for (uint256 j = 0; j < found; j++) ids[j] = tmp[j];
+    }
+
+    function contractBalanceWei() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function getGlobalState() external view returns (
+        uint256 planCount_,
+        uint256 feeBps_,
+        bool namespacePaused_,
+        address oracle_,
+        address auditor_,
+        address treasury_
+    ) {
+        return (planCount, feeBps, _namespacePaused, oracle, auditor, treasury);
+    }
+
+    // -------------------------------------------------------------------------
+    // DOCUMENTATION / REFERENCE (view wrappers for constants)
+    // -------------------------------------------------------------------------
+
+    /// @notice Denominator for fee basis points (10000).
+    function feeDenomBps() external pure returns (uint256) { return KV_FEE_DENOM_BPS; }
+
+    /// @notice Maximum layout style index (15).
+    function maxStyleIndex() external pure returns (uint8) { return uint8(KV_MAX_STYLE); }
+
+    /// @notice Maximum risk tier index (6).
+    function maxTierIndex() external pure returns (uint8) { return uint8(KV_MAX_TIER); }
+
+    /// @notice Maximum number of plans that can be registered.
+    function maxPlansCap() external pure returns (uint256) { return KV_MAX_PLANS; }
+
+    /// @notice Maximum ratings per plan.
+    function maxRatingsPerPlanCap() external pure returns (uint256) { return KV_MAX_RATINGS_PER_PLAN; }
+
+    /// @notice Namespace hash for pause scope.
