@@ -266,3 +266,70 @@ contract KetaVision {
         if (riskTier > KV_MAX_TIER) revert KV_InvalidTier();
 
         Plan memory p = Plan({
+            planId: planId,
+            creator: msg.sender,
+            layoutStyle: layoutStyle,
+            riskTier: riskTier,
+            ceilingHeightCm: ceilingHeightCm,
+            areaCm2: areaCm2,
+            applianceCount: applianceCount,
+            exists: true,
+            softDeleted: false,
+            pinned: false,
+            createdAt: uint64(block.timestamp)
+        });
+
+        _plans[planId] = p;
+        _planIds.push(planId);
+        planCount++;
+
+        emit KitchenSketched(
+            planId,
+            msg.sender,
+            layoutStyle,
+            riskTier,
+            ceilingHeightCm,
+            areaCm2,
+            applianceCount,
+            uint64(block.timestamp)
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // ORACLE / AUDITOR ACTIONS
+    // -------------------------------------------------------------------------
+
+    function pinPlan(bytes32 planId, bool value) external onlyOracle {
+        Plan storage p = _plans[planId];
+        if (!p.exists) revert KV_NotFound();
+        if (p.softDeleted) revert KV_AlreadyDeleted();
+        p.pinned = value;
+        emit PlanPinned(planId, msg.sender, uint64(block.timestamp));
+    }
+
+    function softDeletePlan(bytes32 planId) external onlyAuditor {
+        Plan storage p = _plans[planId];
+        if (!p.exists) revert KV_NotFound();
+        if (p.softDeleted) revert KV_AlreadyDeleted();
+        p.softDeleted = true;
+        emit PlanSoftDeleted(planId, msg.sender, uint64(block.timestamp));
+    }
+
+    // -------------------------------------------------------------------------
+    // RATING
+    // -------------------------------------------------------------------------
+
+    function ratePlan(
+        bytes32 planId,
+        uint8 ergonomicsScore,
+        uint8 storageScore,
+        uint8 vibeScore
+    ) external payable whenNamespaceActive nonReentrant {
+        Plan storage p = _plans[planId];
+        if (!p.exists || p.softDeleted) revert KV_NotFound();
+
+        if (ergonomicsScore == 0 || ergonomicsScore > 10) revert KV_InvalidScore();
+        if (storageScore == 0 || storageScore > 10) revert KV_InvalidScore();
+        if (vibeScore == 0 || vibeScore > 10) revert KV_InvalidScore();
+
+        RatingSummary storage summary = _ratingSummary[planId];
