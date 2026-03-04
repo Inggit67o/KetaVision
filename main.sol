@@ -65,3 +65,70 @@ contract KetaVision {
     error KV_Reentrant();
     error KV_TooManyPlans();
     error KV_TooManyRatings();
+    error KV_InvalidFeeBps();
+    error KV_NamespaceLocked();
+    error KV_InsufficientFee();
+    error KV_InvalidIndex();
+
+    // -------------------------------------------------------------------------
+    // CONSTANTS
+    // -------------------------------------------------------------------------
+
+    uint256 public constant KV_FEE_DENOM_BPS = 10_000;
+    uint256 public constant KV_MAX_STYLE = 15;
+    uint256 public constant KV_MAX_TIER = 6;
+    uint256 public constant KV_MAX_PLANS = 200_000;
+    uint256 public constant KV_MAX_RATINGS_PER_PLAN = 512;
+
+    bytes32 public constant KV_NAMESPACE = keccak256("KetaVision.kitchen.v1");
+    bytes32 public constant KV_VERSION = keccak256("ketavision.version.1");
+
+    // -------------------------------------------------------------------------
+    // IMMUTABLES
+    // -------------------------------------------------------------------------
+
+    address public immutable owner;
+    address public immutable deployer;
+
+    // -------------------------------------------------------------------------
+    // STATE
+    // -------------------------------------------------------------------------
+
+    address public oracle;
+    address public auditor;
+    address public treasury;
+    uint256 public feeBps;
+
+    uint256 private _lock;
+    bool private _namespacePaused;
+
+    struct Plan {
+        bytes32 planId;
+        address creator;
+        uint8 layoutStyle;
+        uint8 riskTier;
+        uint32 ceilingHeightCm;
+        uint32 areaCm2;
+        uint16 applianceCount;
+        bool exists;
+        bool softDeleted;
+        bool pinned;
+        uint64 createdAt;
+    }
+
+    struct RatingSummary {
+        uint32 ergonomicsTotal;
+        uint32 storageTotal;
+        uint32 vibeTotal;
+        uint32 ratingCount;
+    }
+
+    mapping(bytes32 => Plan) private _plans;
+    mapping(bytes32 => RatingSummary) private _ratingSummary;
+    mapping(bytes32 => mapping(address => bool)) private _ratedByUser;
+
+    bytes32[] private _planIds;
+    uint256 public planCount;
+
+    // Layout styles 0..15: 0=minimalist, 1=warm-wood, 2=industrial, 3=scandi, 4=neo-classic,
+    // 5=maximalist, 6=galley-optimized, 7=island-centric, 8=chef-lab, 9=family-hub, 10..15=custom.
