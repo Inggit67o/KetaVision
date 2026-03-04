@@ -668,3 +668,70 @@ contract KetaVision {
     function isValidRiskTier(uint8 tier) external pure returns (bool) {
         return tier <= KV_MAX_TIER;
     }
+
+    function isValidScore(uint8 score) external pure returns (bool) {
+        return score >= 1 && score <= 10;
+    }
+
+    function derivePlanId(address creator, bytes32 seed, uint256 salt) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(creator, seed, salt));
+    }
+
+    function isZeroPlanId(bytes32 planId) external pure returns (bool) {
+        return planId == bytes32(0);
+    }
+
+    // -------------------------------------------------------------------------
+    // ADDITIONAL VIEWS (analytics / off-chain indexing)
+    // -------------------------------------------------------------------------
+
+    function getPlansInRange(uint256 fromIdx, uint256 toIdx) external view returns (
+        bytes32[] memory ids,
+        address[] memory creators,
+        uint8[] memory riskTiers,
+        uint32[] memory areasCm2,
+        bool[] memory pinned
+    ) {
+        if (fromIdx > toIdx || toIdx >= _planIds.length) revert KV_InvalidIndex();
+        uint256 len = toIdx - fromIdx + 1;
+        ids = new bytes32[](len);
+        creators = new address[](len);
+        riskTiers = new uint8[](len);
+        areasCm2 = new uint32[](len);
+        pinned = new bool[](len);
+        for (uint256 i = 0; i < len; i++) {
+            bytes32 id = _planIds[fromIdx + i];
+            Plan storage p = _plans[id];
+            ids[i] = id;
+            creators[i] = p.creator;
+            riskTiers[i] = p.riskTier;
+            areasCm2[i] = p.areaCm2;
+            pinned[i] = p.pinned;
+        }
+    }
+
+    function countPlansByRiskTier(uint8 riskTier) external view returns (uint256 count) {
+        if (riskTier > KV_MAX_TIER) return 0;
+        for (uint256 i = 0; i < _planIds.length; i++) {
+            if (_plans[_planIds[i]].riskTier == riskTier) count++;
+        }
+    }
+
+    function countPlansByLayoutStyle(uint8 layoutStyle) external view returns (uint256 count) {
+        if (layoutStyle > KV_MAX_STYLE) return 0;
+        for (uint256 i = 0; i < _planIds.length; i++) {
+            if (_plans[_planIds[i]].layoutStyle == layoutStyle) count++;
+        }
+    }
+
+    function getPlanIdsForCreator(address creator, uint256 maxReturn) external view returns (bytes32[] memory ids) {
+        uint256 cap = maxReturn > _planIds.length ? _planIds.length : maxReturn;
+        uint256 found = 0;
+        bytes32[] memory tmp = new bytes32[](_planIds.length);
+        for (uint256 i = 0; i < _planIds.length && found < cap; i++) {
+            if (_plans[_planIds[i]].creator == creator && !_plans[_planIds[i]].softDeleted) {
+                tmp[found] = _planIds[i];
+                found++;
+            }
+        }
+        ids = new bytes32[](found);
